@@ -90,7 +90,7 @@ public class ReadFileWindow extends JFrame {
 				String start = startDate.getText();
 				String end = endDate.getText();
 				ruslutlabel.setText("ÕıÔÚ²éÑ¯...ÇëÉÔºò");
-				String regex = "[0-9]{3}";
+				String regex = "[0-9]+";
 				
 				ruslutlabel.updateUI();
 
