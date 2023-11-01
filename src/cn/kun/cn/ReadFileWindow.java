@@ -307,7 +307,6 @@ public class ReadFileWindow extends JFrame {
 		rf.setSize(550, 550);
 		rf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		rf.setVisible(true);
-
 	}
 
 }
