@@ -4,9 +4,12 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,12 +29,10 @@ public class ReadFindFile {
 
 	private static boolean RUN_SYSTEM = true;
 
-	
-
 	public static int findReadAndPrint(String f, String find, int line,
 			boolean isPrint, String path) throws Exception {
 		File file = new File(f);
-		List<Integer> findDataList = findDataFile(file, find);
+		List<Long> findDataList = findDataFile(file, find);
 		int size = findDataList.size();
 		System.out.println("正在出文件");
 		if (isPrint) {
@@ -41,7 +42,7 @@ public class ReadFindFile {
 					File outFile = new File(path + "/" + i + ".txt");
 
 					writeFile(file, outFile, findDataList.get(i), line);
-					//String st = "一共:" + size + "/当前:" + i;
+					// String st = "一共:" + size + "/当前:" + i;
 
 				}
 			}
@@ -49,43 +50,60 @@ public class ReadFindFile {
 		return size;
 	}
 
-	public static List<Integer> findDataFile(File file, String find)
+	public static List<Long> findDataFile(File file, String find)
 			throws Exception {
-		List<Integer> line = new ArrayList<Integer>();
-		BufferedReader br = new BufferedReader(new InputStreamReader(
-				new FileInputStream(file)));
-		int count = 1;
-	
-		while (br.ready()) {
-
-			String st = br.readLine();
-			if (st.contains(find)) {
-				line.add(count);
-
+		System.out.println("正在读取文件");
+		List<Long> line = new ArrayList<Long>();
+		BufferedReader br = null;
+		br = setBrCoding(file);
+		long count = 1;
+		String st = null;
+		try {
+		
+			while ((st = br.readLine()) != null) {
+				
+				if (st.contains(find) || st.indexOf(find) != -1) {
+					line.add(count);
+				}
+				
+				count++;
 			}
-			count++;
-
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-
+		System.out.println("读取完成");
 		br.close();
 		return line;
 	}
 
-	public static void writeFile(File file, File outFile, int number, int h)
+	private static BufferedReader setBrCoding(File file)
+			throws UnsupportedEncodingException, FileNotFoundException {
+		BufferedReader br;
+		if (file.getName().contains("_i")) {
+			br = new BufferedReader(new InputStreamReader(new FileInputStream(
+					file), "UTF-8"));
+		} else {
+			br = new BufferedReader(new InputStreamReader(new FileInputStream(
+					file), "GBK"));
+		}
+		return br;
+	}
+
+	public static void writeFile(File file, File outFile, Long number, int h)
 			throws Exception {
-		BufferedReader br = new BufferedReader(new InputStreamReader(
-				new FileInputStream(file)));
+		BufferedReader br = null;
 		BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
+		br = setBrCoding(file);
 		if (number > 0) {
 			long count = 1;
 			int hlaf = h / 2;
-			while (br.ready()) {
-				String st = br.readLine();
+			String st = null;
+			while ((st = br.readLine()) != null) {
+
 				if (count >= number - hlaf && count <= number + hlaf) {
 					bw.write(count + "行" + st + "\r\n");
 					bw.flush();
 				}
-
 				count++;
 			}
 		} else {
@@ -227,8 +245,7 @@ public class ReadFindFile {
 	private static void writeFileMothod(String st, Date startDate,
 			Date endDate, BufferedWriter bw, String dj, long readDate)
 			throws IOException {
-		if (readDate >= startDate.getTime()
-				&& readDate <= endDate.getTime()) {
+		if (readDate >= startDate.getTime() && readDate <= endDate.getTime()) {
 			bool = true;
 			String info = st + "\r\n";
 			if (!"".equals(dj) && st.contains(dj)) {
@@ -236,8 +253,8 @@ public class ReadFindFile {
 			}
 			bw.write(info);
 			bw.flush();
-		} 
-		//System.out.println(readDate + "+++" +endDate.getTime());
+		}
+		// System.out.println(readDate + "+++" +endDate.getTime());
 		if (readDate > endDate.getTime()) {
 			bool = false;
 			boolTwo = false;
@@ -246,13 +263,14 @@ public class ReadFindFile {
 
 	public static void swingWorkDate(final String soureFile,
 			final String start, final String end, final String path,
-			final String dj, final JLabel ruslutlabel,final JButton enter, final JButton cancel) {
-	
+			final String dj, final JLabel ruslutlabel, final JButton enter,
+			final JButton cancel) {
+
 		new SwingWorker<String, String>() {
 
 			@Override
 			protected String doInBackground() throws Exception {
-				
+
 				File file = null;
 				InputStreamReader isr = null;
 				boolean fileFormat;
@@ -271,9 +289,8 @@ public class ReadFindFile {
 
 				BufferedWriter bw = null;
 				String regex = "[0-9]{2}:[0-9]{2}";
-				if(!start.matches(regex) || !end.matches(regex) ){
-					enter.setVisible(true);
-					cancel.setVisible(false);
+				if (!start.matches(regex) || !end.matches(regex)) {
+					onFind(enter, cancel);
 					ruslutlabel.setText("时间输入错误(HH:mm)");
 					return null;
 				}
@@ -282,23 +299,19 @@ public class ReadFindFile {
 				if (endDate.getTime() < startDate.getTime()) {
 					// System.out.println("时间输入错误");
 					ruslutlabel.setText("时间输入错误,开始时间不能大于结束时间");
-					enter.setVisible(true);
-					cancel.setVisible(false);
+					onFind(enter, cancel);
 					return null;
-				}else{
-					enter.setVisible(false);
-					cancel.setVisible(true);
 				}
-
+				offFind(enter, cancel);
 				int i = 0;
 				publish("正在读取...");
 				RUN_SYSTEM = true;
 				boolTwo = true;
-				while (br.ready()) {
+				String st = null;
+				while ((st = br.readLine()) != null) {
 					if (!RUN_SYSTEM) {
 						publish("停止文件");
-						enter.setVisible(true);
-						cancel.setVisible(false);
+						onFind(enter, cancel);
 						if (bw != null) {
 							bw.close();
 						}
@@ -312,12 +325,12 @@ public class ReadFindFile {
 						file = new File(path + "/fileOut" + i++ + ".txt");
 						bw = new BufferedWriter(new FileWriter(file));
 					}
-					String st = br.readLine();
+
 					// System.out.println(st);
 					try {
-						if(bool){
+						if (bool) {
 							publish("正在打印文件");
-						}else{
+						} else {
 							publish("正在扫描文件");
 						}
 						if (fileFormat) {
@@ -342,8 +355,7 @@ public class ReadFindFile {
 				}
 				bw.close();
 				br.close();
-				enter.setVisible(true);
-				cancel.setVisible(false);
+				onFind(enter, cancel);
 				publish("文件生成完成!地址--->" + path);
 				System.out.println("文件生成完成!地址--->" + path);
 				return null;
@@ -358,6 +370,7 @@ public class ReadFindFile {
 
 	/**
 	 * 关键字
+	 * 
 	 * @param f
 	 * @param find
 	 * @param line
@@ -369,45 +382,58 @@ public class ReadFindFile {
 			final int line, final boolean isPrint, final String path,
 			final JLabel ruslutlabel, final JButton enter, final JButton cancel) {
 		RUN_SYSTEM = true;
+		final File file = new File(f);
+		
+		if (file.length() > 1024 * 1024 * 1024 * 2) {
+			double fileSize = file.length() / 1024.0 / 1024.0 / 1024.0;
+			System.out.println("文件大小:" + fileSize);
+
+		}
+
 		new SwingWorker<String, String>() {
 
 			@Override
 			protected String doInBackground() throws Exception {
 				// TODO Auto-generated method stub
-				File file = new File(f);
-				
-				List<Integer> findDataList = findDataFile(file, find);
+
+				filewWord(find, line, isPrint, path, enter, cancel, file);
+				return null;
+			}
+
+			private void filewWord(final String find, final int line,
+					final boolean isPrint, final String path,
+					final JButton enter, final JButton cancel, final File file)
+					throws Exception {
+				List<Long> findDataList = findDataFile(file, find);
 				int size = findDataList.size();
-				enter.setVisible(false);
-				cancel.setVisible(true); 
-				System.out.println("正在出文件");
+				offFind(enter, cancel);
 				if (isPrint) {
+					System.out.println("正在出文件!");
 					if (isPrint && findDataList.size() > 0) {
 
 						for (int i = 0; i < findDataList.size(); i++) {
 							if (!RUN_SYSTEM) {
-								enter.setVisible(true);
-								cancel.setVisible(false);
+								onFind(enter, cancel);
 								publish("停止文件");
 								break;
 							}
 							String st = "一共:" + size + "/当前:" + i;
+							System.out.println(st);
 							publish(st);
 							File outFile = new File(path + "/" + i + ".txt");
-
 							writeFile(file, outFile, findDataList.get(i), line);
 
 						}
-						enter.setVisible(true);
-						cancel.setVisible(false);
+						onFind(enter, cancel);
 						publish("完成");
+					} else {
+						onFind(enter, cancel);
+						publish("关键字一共:" + size);
 					}
-				}else{
-					enter.setVisible(true);
-					cancel.setVisible(false);
-					publish("关键字一共:"+size);
+				} else {
+					onFind(enter, cancel);
+					publish("不出文件，关键字一共:" + size);
 				}
-				return null;
 			}
 
 			@Override
@@ -422,9 +448,20 @@ public class ReadFindFile {
 
 	}
 
+	// 打开
+	public static void onFind(JButton enter, JButton cancel) {
+		enter.setVisible(true);
+		cancel.setVisible(false);
+	}
+
+	// 关闭
+	public static void offFind(JButton enter, JButton cancel) {
+		enter.setVisible(false);
+		cancel.setVisible(true);
+	}
+
 	public static void SystemStop() {
 		RUN_SYSTEM = false;
 	}
-	
-	
+
 }
