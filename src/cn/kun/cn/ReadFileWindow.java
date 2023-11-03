@@ -25,7 +25,7 @@ import javax.swing.JTextField;
 public class ReadFileWindow extends JFrame {
 
 	private String file = null;
-	private String creatFile = null;
+	private String creatFile = "D:/log_test/";
 	private String find = null;
 	private JTextField textFindField;
 	private JTextField lineNumber;
@@ -35,8 +35,10 @@ public class ReadFileWindow extends JFrame {
 	private boolean isPrint = true;
 	private JRadioButton[] button;
 	private static boolean sd = true;
+	private String userPath;
 
-	public ReadFileWindow() {
+	public ReadFileWindow(String userPath) {
+		this.userPath = userPath;
 		setTitle("读取文件信息");
 		JPanel jPanel = new JPanel();
 		jPanel.setLayout(new BorderLayout());
@@ -91,19 +93,19 @@ public class ReadFileWindow extends JFrame {
 				String end = endDate.getText();
 				ruslutlabel.setText("正在查询...请稍候");
 				String regex = "[0-9]+";
-				
+
 				ruslutlabel.updateUI();
 
 				if ("".equals(start) && "".equals(end)) {
-					if (!"".equals(find) && !"".equals(file)
+					if (!"".equals(find) && !"请选择文件".equals(file)
 							&& !"".equals(creatFile)) {
 
 						try {
-							if(line.matches(regex)){
+							if (line.matches(regex)) {
 								ReadFindFile.findSwingWork(file, find,
-										Integer.parseInt(line), isPrint, creatFile,
-										ruslutlabel, button,button1);
-							}else{
+										Integer.parseInt(line), isPrint,
+										creatFile, ruslutlabel, button, button1);
+							} else {
 								ruslutlabel.setText("行数请输入数字");
 							}
 						} catch (Exception e1) {
@@ -116,7 +118,7 @@ public class ReadFileWindow extends JFrame {
 					try {
 
 						ReadFindFile.swingWorkDate(file, start, end, creatFile,
-								"", ruslutlabel, button,button1);
+								"", ruslutlabel, button, button1);
 
 					} catch (Exception e1) {
 						// TODO Auto-generated catch block
@@ -266,10 +268,11 @@ public class ReadFileWindow extends JFrame {
 		JPanel fileBu = new JPanel();
 		fileBu.setBackground(Color.white);
 		fileBu.setLayout(new FlowLayout(FlowLayout.LEFT));
-
+		file = userPath==null?"请选择文件":userPath;
 		JButton choose_Button = new JButton(title);
-		final JLabel label = new JLabel("请选择文件...");
-
+		final JLabel label = bool ? new JLabel(file) : new JLabel(
+				"D:/log_test/");
+		
 		fileBu.add(choose_Button);
 		fileBu.add(label);
 
@@ -303,7 +306,11 @@ public class ReadFileWindow extends JFrame {
 	}
 
 	public static void main(String[] args) {
-		ReadFileWindow rf = new ReadFileWindow();
+		String path = null;
+		if (args != null && args.length > 0) {
+			path = args[0];
+		}
+		ReadFileWindow rf = new ReadFileWindow(path);
 		rf.setSize(550, 550);
 		rf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		rf.setVisible(true);
